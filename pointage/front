@@ -1,0 +1,713 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+from tkinter import font as tkFont
+import requests
+from datetime import datetime
+import threading
+import json
+import cv2
+from PIL import Image, ImageTk
+
+BASE_URL = "http://127.0.0.1:5000"
+
+class ModernFacialRecognitionApp:
+    def __init__(self, root):
+        self.root = root
+        self.setup_window()
+        self.setup_modern_styles()
+        self.status_var = tk.StringVar(value="System Ready")
+        self.create_modern_widgets()
+        self.animate_startup()
+        
+    def setup_window(self):
+        """Configure the ultra-modern window"""
+        self.root.title("AI Facial Recognition Suite 2025")
+        self.root.state('zoomed')  # Start maximized on Windows
+        self.root.configure(bg="#0a0a0a")
+        self.root.resizable(True, True)
+        self.root.minsize(600, 500)
+        
+    def setup_modern_styles(self):
+        """Setup ultra-modern styles and gradients"""
+        self.colors = {
+            'bg_primary': '#0a0a0a',
+            'bg_secondary': '#111111', 
+            'bg_card': '#1a1a1a',
+            'accent_blue': '#00d4ff',
+            'accent_purple': '#8b5cf6',
+            'accent_green': '#10b981',
+            'accent_red': '#ef4444',
+            'accent_orange': '#f59e0b',
+            'text_primary': '#ffffff',
+            'text_secondary': '#a1a1aa',
+            'text_muted': '#71717a',
+            'border': '#27272a',
+            'success': '#22c55e',
+            'warning': '#eab308',
+            'error': '#dc2626'
+        }
+        
+        # Modern fonts
+        self.fonts = {
+            'title': tkFont.Font(family="Segoe UI", size=32, weight="bold"),
+            'subtitle': tkFont.Font(family="Segoe UI", size=16, weight="normal"),
+            'heading': tkFont.Font(family="Segoe UI", size=20, weight="bold"),
+            'body': tkFont.Font(family="Segoe UI", size=12, weight="normal"),
+            'button': tkFont.Font(family="Segoe UI", size=14, weight="bold"),
+            'caption': tkFont.Font(family="Segoe UI", size=10, weight="normal"),
+            'mono': tkFont.Font(family="JetBrains Mono", size=10, weight="normal")
+        }
+        
+    def create_modern_widgets(self):
+        """Create ultra-modern UI components"""
+        # Create main canvas and scrollbar for scrolling
+        self.main_canvas = tk.Canvas(self.root, bg=self.colors['bg_primary'], highlightthickness=0)
+        self.scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=self.main_canvas.yview)
+        self.scrollable_frame = tk.Frame(self.main_canvas, bg=self.colors['bg_primary'])
+        
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
+        )
+        
+        # Bind canvas to window resize events for responsive design
+        def configure_canvas(event):
+            canvas_width = event.width
+            self.main_canvas.itemconfig(self.canvas_frame_id, width=canvas_width)
+        
+        self.main_canvas.bind('<Configure>', configure_canvas)
+        
+        self.canvas_frame_id = self.main_canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.main_canvas.configure(yscrollcommand=self.scrollbar.set)
+        
+        # Pack canvas and scrollbar
+        self.main_canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+        
+        # Main container with responsive padding
+        self.main_container = tk.Frame(self.scrollable_frame, bg=self.colors['bg_primary'])
+        self.main_container.pack(fill="both", expand=True, padx=(20, 40), pady=(20, 30))
+        
+        # Bind mousewheel to canvas
+        def _on_mousewheel(event):
+            self.main_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        self.main_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        # Initialize camera variables
+        self.cap = None
+        self.camera_active = False
+        
+        # Create sections
+        self.create_hero_section()
+        self.create_control_panel()
+        self.create_camera_section()
+        self.create_action_grid()
+        self.create_activity_monitor()
+        self.create_status_panel()
+        
+    def create_hero_section(self):
+        """Create the hero section with modern branding"""
+        hero_frame = tk.Frame(self.main_container, bg=self.colors['bg_primary'])
+        hero_frame.pack(fill="x", pady=(0, 40))
+        
+        # Main title with glow effect
+        title_container = tk.Frame(hero_frame, bg=self.colors['bg_primary'])
+        title_container.pack()
+        
+        # Create title with shadow effect
+        shadow_title = tk.Label(title_container,
+                               text="AI FACIAL RECOGNITION",
+                               font=self.fonts['title'],
+                               bg=self.colors['bg_primary'],
+                               fg="#333333")
+        shadow_title.place(x=2, y=2)
+        
+        main_title = tk.Label(title_container,
+                             text="AI FACIAL RECOGNITION",
+                             font=self.fonts['title'],
+                             bg=self.colors['bg_primary'],
+                             fg=self.colors['accent_blue'])
+        main_title.pack()
+        
+        # Animated subtitle
+        subtitle = tk.Label(hero_frame,
+                           text="Next-Generation Workforce Management System",
+                           font=self.fonts['subtitle'],
+                           bg=self.colors['bg_primary'],
+                           fg=self.colors['text_secondary'])
+        subtitle.pack(pady=(10, 0))
+        
+        # Status indicator
+        self.status_indicator = tk.Frame(hero_frame, bg=self.colors['bg_primary'])
+        self.status_indicator.pack(pady=(20, 0))
+        
+        self.status_dot = tk.Label(self.status_indicator,
+                                  text="●",
+                                  font=("Arial", 20),
+                                  bg=self.colors['bg_primary'],
+                                  fg=self.colors['success'])
+        self.status_dot.pack(side="left")
+        
+        self.status_text = tk.Label(self.status_indicator,
+                                   text="SYSTEM ONLINE",
+                                   font=self.fonts['caption'],
+                                   bg=self.colors['bg_primary'],
+                                   fg=self.colors['success'])
+        self.status_text.pack(side="left", padx=(10, 0))
+    
+    def create_control_panel(self):
+        """Create the modern control panel"""
+        panel_frame = self.create_glass_card(self.main_container, "USER INPUT INTERFACE")
+        panel_frame.pack(fill="x", pady=(0, 30))
+        
+        # Input grid with responsive design
+        input_grid = tk.Frame(panel_frame, bg=self.colors['bg_card'])
+        input_grid.pack(fill="x", padx=30, pady=20)
+        input_grid.grid_columnconfigure(0, weight=1)  # Make inputs expand
+        
+        # Employee ID with modern styling
+        self.create_modern_input(input_grid, "Employee ID", 0)
+        self.entry_id = self.last_entry
+        
+        # Employee Name
+        self.create_modern_input(input_grid, "Full Name (Optional)", 1)
+        self.entry_name = self.last_entry
+    
+    def create_camera_section(self):
+        """Create the integrated camera section with FIXED SIZE"""
+        camera_card = self.create_glass_card(self.main_container, "CAMERA LIVE FEED")
+        camera_card.pack(fill="x", pady=(0, 30))
+        
+        # Camera container
+        camera_container = tk.Frame(camera_card, bg=self.colors['bg_card'])
+        camera_container.pack(fill="x", padx=30, pady=20)
+        
+        # Fixed size camera display using Canvas - FORCED DIMENSIONS
+        self.camera_canvas = tk.Canvas(camera_container, 
+                                      width=800,  # FIXED WIDTH
+                                      height=600,  # FIXED HEIGHT
+                                      bg=self.colors['bg_secondary'],
+                                      highlightthickness=2,
+                                      highlightbackground=self.colors['border'])
+        
+        # IMPORTANT: Pack with no expand to maintain fixed size
+        self.camera_canvas.pack(pady=10, anchor="center")
+        self.camera_canvas.pack_propagate(False)  # Prevent size changes
+        
+        # Initial text on canvas
+        self.camera_canvas.create_text(400, 300, 
+                                      text="Camera Ready - Click 'Start Camera' to begin",
+                                      fill=self.colors['text_secondary'],
+                                      font=self.fonts['subtitle'],
+                                      tags="camera_text")
+        
+        # Camera controls
+        camera_controls = tk.Frame(camera_container, bg=self.colors['bg_card'])
+        camera_controls.pack(fill="x", pady=(15, 0))
+        
+        # Start/Stop camera button
+        self.camera_toggle_btn = tk.Button(camera_controls,
+                                         text="START CAMERA",
+                                         font=self.fonts['button'],
+                                         bg=self.colors['accent_green'],
+                                         fg=self.colors['text_primary'],
+                                         relief="flat",
+                                         bd=0,
+                                         padx=30,
+                                         pady=12,
+                                         cursor="hand2",
+                                         command=self.toggle_camera)
+        self.camera_toggle_btn.pack(side="left", padx=(0, 15))
+        
+        # Camera status
+        self.camera_status = tk.Label(camera_controls,
+                                     text="Camera: OFF",
+                                     font=self.fonts['body'],
+                                     bg=self.colors['bg_card'],
+                                     fg=self.colors['text_muted'])
+        self.camera_status.pack(side="left", padx=(15, 0))
+    
+    def create_modern_input(self, parent, label_text, row):
+        """Create a modern input field with floating label effect"""
+        container = tk.Frame(parent, bg=self.colors['bg_card'])
+        container.grid(row=row, column=0, sticky="ew", pady=15)
+        container.grid_columnconfigure(0, weight=1)
+        
+        # Label
+        label = tk.Label(container,
+                        text=label_text,
+                        font=self.fonts['body'],
+                        bg=self.colors['bg_card'],
+                        fg=self.colors['accent_blue'])
+        label.grid(row=0, column=0, sticky="w")
+        
+        # Modern entry with custom styling
+        entry_frame = tk.Frame(container, bg=self.colors['border'], height=50)
+        entry_frame.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        entry_frame.grid_propagate(False)
+        
+        entry = tk.Entry(entry_frame,
+                        font=self.fonts['body'],
+                        bg=self.colors['bg_secondary'],
+                        fg=self.colors['text_primary'],
+                        relief="flat",
+                        bd=0,
+                        insertbackground=self.colors['accent_blue'])
+        entry.pack(fill="both", expand=True, padx=2, pady=2)
+        
+        # Store reference to last entry for external access
+        self.last_entry = entry
+        
+        # Hover effects
+        def on_enter(e):
+            entry_frame.configure(bg=self.colors['accent_blue'])
+        def on_leave(e):
+            entry_frame.configure(bg=self.colors['border'])
+            
+        entry.bind("<FocusIn>", on_enter)
+        entry.bind("<FocusOut>", on_leave)
+    
+    def create_glass_card(self, parent, title):
+        """Create a glass morphism card"""
+        # Outer container with shadow effect
+        shadow_frame = tk.Frame(parent, bg="#050505", height=4)
+        shadow_frame.pack(fill="x")
+        
+        # Main card
+        card_frame = tk.Frame(parent, bg=self.colors['bg_card'], relief="flat")
+        card_frame.pack(fill="x")
+        
+        # Header
+        header = tk.Frame(card_frame, bg=self.colors['bg_card'], height=60)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+        
+        title_label = tk.Label(header,
+                              text=title,
+                              font=self.fonts['heading'],
+                              bg=self.colors['bg_card'],
+                              fg=self.colors['text_primary'])
+        title_label.pack(expand=True)
+        
+        # Separator line with gradient effect
+        separator = tk.Frame(card_frame, bg=self.colors['accent_blue'], height=2)
+        separator.pack(fill="x")
+        
+        return card_frame
+    
+    def create_action_grid(self):
+        """Create modern action buttons in a responsive grid"""
+        actions_card = self.create_glass_card(self.main_container, "ACTIONS")
+        actions_card.pack(fill="x", pady=(0, 30))
+        
+        # Button grid container with responsive design
+        button_container = tk.Frame(actions_card, bg=self.colors['bg_card'])
+        button_container.pack(fill="x", padx=20, pady=30)
+        
+        # Configure responsive grid for 3 columns
+        for i in range(3):
+            button_container.grid_columnconfigure(i, weight=1, uniform="buttons")
+        
+        # Three action buttons in one line with responsive sizing
+        self.create_action_button(button_container, "REGISTER FACE", 
+                                 self.register_face_threaded, 
+                                 self.colors['accent_green'], 0, 0)
+        
+        self.create_action_button(button_container, "ATTENDANCE CHECK", 
+                                 self.pointage_threaded, 
+                                 self.colors['accent_blue'], 0, 1)
+        
+        self.create_action_button(button_container, "CLEAR ALL", 
+                                 self.clear_fields, 
+                                 self.colors['accent_red'], 0, 2)
+    
+    def create_action_button(self, parent, text, command, color, row, col):
+        """Create a modern action button with responsive design"""
+        button_frame = tk.Frame(parent, bg=self.colors['bg_card'])
+        button_frame.grid(row=row, column=col, padx=10, pady=15, sticky="ew")
+        
+        button = tk.Button(button_frame,
+                          text=text,
+                          font=self.fonts['button'],
+                          bg=color,
+                          fg=self.colors['text_primary'],
+                          relief="flat",
+                          bd=0,
+                          padx=20,
+                          pady=20,
+                          cursor="hand2",
+                          command=command,
+                          wraplength=150)  # Allow text wrapping on smaller buttons
+        button.pack(fill="both", expand=True)
+        
+        # Hover effects
+        def on_enter(e):
+            button.configure(bg=self.lighten_color(color))
+        def on_leave(e):
+            button.configure(bg=color)
+            
+        button.bind("<Enter>", on_enter)
+        button.bind("<Leave>", on_leave)
+    
+    def lighten_color(self, color):
+        """Lighten a hex color for hover effects"""
+        # Simple color lightening
+        if color == self.colors['accent_green']:
+            return "#14d49b"
+        elif color == self.colors['accent_blue']:
+            return "#1ae7ff"
+        elif color == self.colors['accent_purple']:
+            return "#9d6eff"
+        elif color == self.colors['accent_red']:
+            return "#ff5555"
+        return color
+    
+    def create_activity_monitor(self):
+        """Create the activity monitor section"""
+        monitor_card = self.create_glass_card(self.main_container, "LIVE ACTIVITY MONITOR")
+        monitor_card.pack(fill="both", expand=True, pady=(0, 20))
+        
+        # Monitor container
+        monitor_container = tk.Frame(monitor_card, bg=self.colors['bg_card'])
+        monitor_container.pack(fill="both", expand=True, padx=30, pady=20)
+        
+        # Log area with custom styling
+        log_frame = tk.Frame(monitor_container, bg=self.colors['bg_secondary'])
+        log_frame.pack(fill="both", expand=True)
+        
+        # Custom text widget with modern styling
+        self.log_text = tk.Text(log_frame,
+                               font=self.fonts['mono'],
+                               bg=self.colors['bg_secondary'],
+                               fg=self.colors['text_primary'],
+                               insertbackground=self.colors['accent_blue'],
+                               selectbackground=self.colors['accent_blue'],
+                               relief="flat",
+                               bd=0,
+                               padx=20,
+                               pady=15,
+                               wrap=tk.WORD)
+        
+        # Modern scrollbar
+        scrollbar = ttk.Scrollbar(log_frame, orient="vertical", command=self.log_text.yview)
+        self.log_text.configure(yscrollcommand=scrollbar.set)
+        
+        self.log_text.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Welcome message
+        self.add_log("AI Facial Recognition System Initialized", "SUCCESS")
+        self.add_log("Connected to recognition server", "INFO")
+        self.add_log("All systems operational", "SUCCESS")
+    
+    def create_status_panel(self):
+        """Create the modern status panel"""
+        status_frame = tk.Frame(self.main_container, bg=self.colors['bg_secondary'], height=60)
+        status_frame.pack(fill="x", pady=(20, 0))
+        status_frame.pack_propagate(False)
+        
+        # Left side - Status
+        left_status = tk.Frame(status_frame, bg=self.colors['bg_secondary'])
+        left_status.pack(side="left", fill="y", padx=20)
+        
+        status_label = tk.Label(left_status,
+                               text="STATUS:",
+                               font=self.fonts['caption'],
+                               bg=self.colors['bg_secondary'],
+                               fg=self.colors['text_muted'])
+        status_label.pack(anchor="w", pady=(10, 0))
+        
+        self.main_status = tk.Label(left_status,
+                                   textvariable=self.status_var,
+                                   font=self.fonts['body'],
+                                   bg=self.colors['bg_secondary'],
+                                   fg=self.colors['success'])
+        self.main_status.pack(anchor="w")
+        
+        # Right side - Time and stats
+        right_status = tk.Frame(status_frame, bg=self.colors['bg_secondary'])
+        right_status.pack(side="right", fill="y", padx=20)
+        
+        time_label = tk.Label(right_status,
+                             text="TIME:",
+                             font=self.fonts['caption'],
+                             bg=self.colors['bg_secondary'],
+                             fg=self.colors['text_muted'])
+        time_label.pack(anchor="e", pady=(10, 0))
+        
+        self.time_display = tk.Label(right_status,
+                                    text="",
+                                    font=self.fonts['body'],
+                                    bg=self.colors['bg_secondary'],
+                                    fg=self.colors['accent_blue'])
+        self.time_display.pack(anchor="e")
+        
+        self.update_time()
+    
+    def update_time(self):
+        """Update time display with modern format"""
+        current_time = datetime.now().strftime("%H:%M:%S • %d.%m.%Y")
+        self.time_display.config(text=current_time)
+        self.root.after(1000, self.update_time)
+    
+    def add_log(self, message, log_type="INFO"):
+        """Add a styled log message"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        # Color coding
+        colors = {
+            "INFO": self.colors['text_secondary'],
+            "SUCCESS": self.colors['success'],
+            "WARNING": self.colors['warning'],
+            "ERROR": self.colors['error']
+        }
+        
+        icons = {
+            "INFO": "ℹ️",
+            "SUCCESS": "✅",
+            "WARNING": "⚠️", 
+            "ERROR": "❌"
+        }
+        
+        log_message = f"[{timestamp}] {icons.get(log_type, 'ℹ️')} {message}\n"
+        
+        self.log_text.insert(tk.END, log_message)
+        self.log_text.see(tk.END)
+        
+        # Auto-scroll
+        self.log_text.update()
+    
+    def animate_startup(self):
+        """Animate the startup sequence"""
+        self.pulse_status_dot()
+    
+    def pulse_status_dot(self):
+        """Animate the status dot"""
+        current_color = self.status_dot.cget("fg")
+        if current_color == self.colors['success']:
+            self.status_dot.configure(fg="#44ff88")
+        else:
+            self.status_dot.configure(fg=self.colors['success'])
+        
+        self.root.after(1000, self.pulse_status_dot)
+    
+    # Camera Methods
+    def toggle_camera(self):
+        """Start or stop the camera"""
+        if not self.camera_active:
+            self.start_camera()
+        else:
+            self.stop_camera()
+    
+    def start_camera(self):
+        """Start the camera feed"""
+        try:
+            self.cap = cv2.VideoCapture(0)
+            if not self.cap.isOpened():
+                raise Exception("Cannot open camera")
+            
+            self.camera_active = True
+            self.camera_toggle_btn.configure(text="STOP CAMERA", bg=self.colors['accent_red'])
+            self.camera_status.configure(text="Camera: ON", fg=self.colors['success'])
+            
+            # Clear the canvas text
+            self.camera_canvas.delete("camera_text")
+            
+            self.update_camera_feed()
+            self.add_log("Camera activated successfully", "SUCCESS")
+            
+        except Exception as e:
+            self.add_log(f"Camera error: {str(e)}", "ERROR")
+            self.camera_canvas.delete("all")
+            self.camera_canvas.create_text(400, 300, 
+                                         text=f"Camera Error: {str(e)}",
+                                         fill=self.colors['error'],
+                                         font=self.fonts['subtitle'],
+                                         tags="camera_text")
+            self.show_modern_error("Camera Error", f"Cannot access camera: {str(e)}")
+    
+    def stop_camera(self):
+        """Stop the camera feed"""
+        self.camera_active = False
+        
+        if hasattr(self, 'cap') and self.cap:
+            self.cap.release()
+        
+        self.camera_toggle_btn.configure(text="START CAMERA", bg=self.colors['accent_green'])
+        self.camera_status.configure(text="Camera: OFF", fg=self.colors['text_muted'])
+        
+        # Clear canvas and show stopped message
+        self.camera_canvas.delete("all")
+        self.camera_canvas.create_text(400, 300, 
+                                     text="Camera Stopped - Click 'Start Camera' to resume",
+                                     fill=self.colors['text_secondary'],
+                                     font=self.fonts['subtitle'],
+                                     tags="camera_text")
+        
+        self.add_log("Camera stopped", "INFO")
+    
+    def update_camera_feed(self):
+        """Update the camera feed - ALWAYS 800x600 size"""
+        if self.camera_active and self.cap and self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret:
+                # Flip for mirror effect
+                frame = cv2.flip(frame, 1)
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                
+                # FORCE resize to exactly 800x600 - no dynamic sizing
+                frame_resized = cv2.resize(frame_rgb, (800, 600))
+                
+                # Convert to PIL/Tkinter format
+                pil_image = Image.fromarray(frame_resized)
+                self.photo = ImageTk.PhotoImage(pil_image)
+                
+                # Clear canvas and display image at center
+                self.camera_canvas.delete("all")
+                self.camera_canvas.create_image(400, 300, image=self.photo)
+            
+            # Schedule next update
+            if self.camera_active:
+                self.root.after(30, self.update_camera_feed)
+    
+    def capture_current_frame(self):
+        """Capture the current camera frame"""
+        if self.cap and self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret:
+                return frame
+        return None
+    
+    # API Methods (modernized)
+    def register_face_threaded(self):
+        threading.Thread(target=self.register_face, daemon=True).start()
+    
+    def pointage_threaded(self):
+        threading.Thread(target=self.pointage, daemon=True).start()
+    
+    def register_face(self):
+        """Modern face registration with enhanced UX"""
+        worker_id = self.entry_id.get().strip()
+        worker_name = self.entry_name.get().strip()
+        
+        if not worker_id:
+            self.show_modern_error("Employee ID Required", "Please enter a valid employee ID")
+            return
+        
+        if not self.camera_active:
+            self.show_modern_error("Camera Not Active", "Please start the camera first before registering")
+            return
+        
+        self.status_var.set("Processing Registration...")
+        self.add_log(f"Starting face registration for ID: {worker_id}", "INFO")
+        
+        # Capture current frame
+        frame = self.capture_current_frame()
+        if frame is not None:
+            try:
+                # Save image temporarily
+                temp_image_path = f"temp_registration_{worker_id}.jpg"
+                cv2.imwrite(temp_image_path, frame)
+                
+                # Send request to backend
+                data = {"ID_OUVRIER": worker_id}
+                if worker_name:
+                    data["NOM"] = worker_name
+                
+                response = requests.post(f"{BASE_URL}/register_face", json=data, timeout=30)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    self.add_log(f"Registration successful for {worker_id}", "SUCCESS")
+                    self.show_modern_success("Registration Complete!", 
+                                            f"Employee {worker_id} registered successfully!")
+                    self.status_var.set("Registration Complete")
+                    self.clear_fields()
+                else:
+                    self.add_log(f"Registration failed: {response.status_code}", "ERROR")
+                    self.show_modern_error("Registration Failed", f"Server error: {response.status_code}")
+                    self.status_var.set("Registration Failed")
+                    
+            except Exception as e:
+                self.add_log(f"Registration error: {str(e)}", "ERROR")
+                self.show_modern_error("Registration Error", str(e))
+                self.status_var.set("Registration Error")
+        else:
+            self.show_modern_error("Capture Failed", "Unable to capture image from camera")
+    
+    def pointage(self):
+        """Modern attendance checking"""
+        if not self.camera_active:
+            self.show_modern_error("Camera Not Active", "Please start the camera first before checking attendance")
+            return
+        
+        self.status_var.set("Processing Attendance...")
+        self.add_log("Starting attendance verification", "INFO")
+        
+        # Capture current frame
+        frame = self.capture_current_frame()
+        if frame is not None:
+            try:
+                # Save image temporarily
+                temp_image_path = "temp_verification.jpg"
+                cv2.imwrite(temp_image_path, frame)
+                
+                response = requests.get(f"{BASE_URL}/pointage", timeout=30)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    self.add_log("Attendance check completed", "SUCCESS")
+                    self.show_modern_success("Attendance Verified!", 
+                                            f"Result: {json.dumps(result, indent=2, ensure_ascii=False)}")
+                    self.status_var.set("Attendance Complete")
+                else:
+                    self.add_log(f"Attendance check failed: {response.status_code}", "ERROR")
+                    self.show_modern_error("Attendance Failed", f"Server error: {response.status_code}")
+                    self.status_var.set("Attendance Failed")
+                    
+            except Exception as e:
+                self.add_log(f"Attendance error: {str(e)}", "ERROR")
+                self.show_modern_error("Attendance Error", str(e))
+                self.status_var.set("Attendance Error")
+        else:
+            self.show_modern_error("Capture Failed", "Unable to capture image from camera")
+    
+    def clear_fields(self):
+        """Clear all input fields with animation"""
+        self.entry_id.delete(0, tk.END)
+        self.entry_name.delete(0, tk.END)
+        self.add_log("Input fields cleared", "INFO")
+        self.status_var.set("System Ready")
+    
+    def show_modern_success(self, title, message):
+        """Show modern success dialog"""
+        messagebox.showinfo(f"✅ {title}", message)
+    
+    def show_modern_error(self, title, message):
+        """Show modern error dialog"""
+        messagebox.showerror(f"❌ {title}", message)
+    
+    def show_modern_info(self, title, message):
+        """Show modern info dialog"""
+        messagebox.showinfo(f"ℹ️ {title}", message)
+
+def main():
+    """Launch the ultra-modern application"""
+    try:
+        root = tk.Tk()
+        app = ModernFacialRecognitionApp(root)
+        
+        # Modern keyboard shortcuts
+        root.bind('<Control-r>', lambda e: app.register_face_threaded())
+        root.bind('<Control-p>', lambda e: app.pointage_threaded())
+        root.bind('<Control-d>', lambda e: app.clear_fields())
+        
+        root.mainloop()
+    except KeyboardInterrupt:
+        print("Application terminated by user")
+    except Exception as e:
+        print(f"Error starting application: {e}")
+
+if __name__ == "__main__":
+    main()
